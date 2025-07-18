@@ -18,9 +18,17 @@ pub fn draw_titlebar(hwnd: HWND, hdc: HDC, width: i32) {
 
         // App Title
         let title = to_wide("SilentGlass");
+
+        let mut size = SIZE::default();
+        unsafe {
+            GetTextExtentPoint32W(hdc, &title, &mut size);
+        }
         SetBkMode(hdc, TRANSPARENT);
+
+        let text_x = (width - size.cx) / 2;
+
         SetTextColor(hdc, rgb(32, 32, 32));
-        TextOutW(hdc, 20, 12, &title);
+        TextOutW(hdc, text_x, 12, &title);
 
         // Modern-style buttons with spacing
         draw_button(hdc, width - 90, 10, 20, 20, rgb(232, 17, 35));  // Close
