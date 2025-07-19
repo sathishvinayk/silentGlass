@@ -48,6 +48,10 @@ fn main() -> Result<()>{
             h_instance,
             Some(std::ptr::null()),
         );
+
+        RegisterHotKey(hwnd, 1, HOT_KEY_MODIFIERS(MOD_CONTROL.0 as u32), 'Q' as u32);
+        RegisterHotKey(hwnd, 2, HOT_KEY_MODIFIERS(0), VK_ESCAPE.0 as u32);
+
         let _ = SetLayeredWindowAttributes(hwnd, rgb(0, 255, 0), 128, LWA_ALPHA);
         
         let _ = ShowWindow(hwnd, SW_SHOW);
@@ -66,7 +70,9 @@ extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM
     match msg {
         WM_DESTROY => {
             unsafe {
-                PostQuitMessage(0)
+                UnregisterHotKey(hwnd, 1);
+                UnregisterHotKey(hwnd, 2);
+                // PostQuitMessage(0);
             };
             LRESULT(0)
         }
@@ -85,21 +91,40 @@ extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM
             LRESULT(0)
         }
         WM_LBUTTONDOWN => {
-            let x = (lparam.0 & 0xFFFF) as i32;
-            let y = ((lparam.0 >> 16) & 0xFFFF) as i32;
+            // let x = (lparam.0 & 0xFFFF) as i32;
+            // let y = ((lparam.0 >> 16) & 0xFFFF) as i32;
 
-            handle_titlebar_click(x, y, hwnd);
+            // handle_titlebar_click(x, y, hwnd);
 
-            if y <= 40 {
+            // if y <= 40 {
                 unsafe {
                     ReleaseCapture();
                     SendMessageW(hwnd, WM_NCLBUTTONDOWN, WPARAM(HTCAPTION as usize), LPARAM(0));
                 }
-            }
+            // }
 
             LRESULT(0)
         }
+        WM_HOTKEY => {
+            match wparam.0 {
+                1 => {
+                    println!("Ctrl + Q pressed → quitting");
+                    unsafe {
+                        let is_visible = IsWindowVisible(hwnd).as_bool();
+                        ShowWindow(hwnd, if is_visible { SW_HIDE } else { SW_SHOW });
+                    }
+                },
+                2 => {
+                    println!("ESC pressed → quitting");
+                    unsafe {
+                        PostQuitMessage(0);
+                    }
+                },
+                _ => {}
+            }
+            LRESULT(0)
 
+        }
         _ => unsafe {
             DefWindowProcW(hwnd, msg, wparam, lparam)
         },
